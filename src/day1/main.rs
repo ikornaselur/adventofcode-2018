@@ -1,9 +1,9 @@
-mod day1error;
+mod error;
 
 use std::fs::File;
 use std::io::prelude::*;
 
-use crate::day1error::Result;
+use crate::error::Result;
 
 fn read_input(path: &str) -> Result<String> {
     let mut file = File::open(&path)?;
@@ -18,10 +18,10 @@ fn main() -> Result<()> {
     // Part 1
     let contents = read_input("src/day1/input1.txt")?;
 
-    let mut result = 0;
-    for line in contents.lines() {
-        result += line.parse::<i32>()?;
-    }
+    let result: i32 = contents
+        .lines()
+        .map(|line| line.parse::<i32>().unwrap())
+        .sum();
     println!("Day 1 - Part 1: {}", result);
 
     Ok(())
