@@ -20,7 +20,7 @@ fn read_input(path: &str) -> Result<String> {
 struct Claim {
     id: usize,
     left: usize,
-    right: usize,
+    top: usize,
     width: usize,
     height: usize,
 }
@@ -28,33 +28,46 @@ struct Claim {
 impl From<&str> for Claim {
     fn from(string: &str) -> Claim {
         let re = Regex::new(
-            r"#(?P<index>\d+) @ (?P<left>\d+),(?P<right>\d+): (?P<width>\d+)x(?P<height>\d+)",
+            r"#(?P<index>\d+) @ (?P<left>\d+),(?P<top>\d+): (?P<width>\d+)x(?P<height>\d+)",
         )
         .unwrap();
         let caps = re.captures(string).unwrap();
         Claim {
             id: caps["index"].parse().unwrap(),
             left: caps["left"].parse().unwrap(),
-            right: caps["right"].parse().unwrap(),
+            top: caps["top"].parse().unwrap(),
             width: caps["width"].parse().unwrap(),
             height: caps["height"].parse().unwrap(),
         }
     }
 }
 
-fn claim_fabric(_fabric: &mut Vec<Vec<i32>>, _claim: &str) {
-    ()
+fn claim_fabric(fabric: &mut Vec<Vec<i32>>, claim: &Claim) {
+    for x in claim.top..claim.top + claim.height {
+        for y in claim.left..claim.left + claim.width {
+            fabric[x][y] += 1;
+        }
+    }
+}
+
+fn count_overclaimed(fabric: &Vec<Vec<i32>>) -> i32 {
+    fabric
+        .iter()
+        .map(|row| row.iter().filter(|x| x > &&1).count() as i32)
+        .sum()
 }
 
 fn main() -> Result<()> {
     // Part 1
-    let _contents = read_input("src/day3/input1.txt")?;
+    let contents = read_input("src/day3/input1.txt")?;
 
     let mut fabric: Vec<Vec<i32>> = vec![vec![0; 1000]; 1000];
 
-    claim_fabric(&mut fabric, "foo");
+    for claim in contents.lines().map(|line| Claim::from(line)) {
+        claim_fabric(&mut fabric, &claim);
+    }
 
-    println!("Day 3 - Part 1: {}", 0);
+    println!("Day 3 - Part 1: {}", count_overclaimed(&fabric));
 
     Ok(())
 }
@@ -74,7 +87,7 @@ mod test {
             Claim {
                 id: 1,
                 left: 1,
-                right: 3,
+                top: 3,
                 width: 5,
                 height: 4
             }
@@ -85,7 +98,7 @@ mod test {
     fn claim_fabric_marks_single_claim() {
         let mut fabric: Vec<Vec<i32>> = vec![vec![0; 8]; 8];
 
-        claim_fabric(&mut fabric, "#1 @ 1,3: 4x4");
+        claim_fabric(&mut fabric, &Claim::from("#1 @ 1,3: 4x4"));
 
         assert_eq!(
             fabric,
@@ -106,7 +119,7 @@ mod test {
     fn claim_fabric_marks_multiple_claims() {
         let mut fabric: Vec<Vec<i32>> = vec![vec![0; 8]; 8];
 
-        claim_fabric(&mut fabric, "#1 @ 1,3: 4x4");
+        claim_fabric(&mut fabric, &Claim::from("#1 @ 1,3: 4x4"));
 
         assert_eq!(
             fabric,
@@ -122,7 +135,7 @@ mod test {
             ]
         );
 
-        claim_fabric(&mut fabric, "#2 @ 3,1: 4x4");
+        claim_fabric(&mut fabric, &Claim::from("#2 @ 3,1: 4x4"));
         assert_eq!(
             fabric,
             vec![
@@ -137,7 +150,7 @@ mod test {
             ]
         );
 
-        claim_fabric(&mut fabric, "#3 @ 5,5: 2x2");
+        claim_fabric(&mut fabric, &Claim::from("#3 @ 5,5: 2x2"));
         assert_eq!(
             fabric,
             vec![
@@ -151,5 +164,21 @@ mod test {
                 vec![0, 0, 0, 0, 0, 0, 0, 0],
             ]
         );
+    }
+
+    #[test]
+    fn count_overclaimed_counts_total_squares_with_more_than_one_claim() {
+        let fabric: Vec<Vec<i32>> = vec![
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+            vec![0, 0, 0, 1, 1, 1, 1, 0],
+            vec![0, 0, 0, 1, 1, 1, 1, 0],
+            vec![0, 1, 1, 2, 2, 1, 1, 0],
+            vec![0, 1, 1, 2, 2, 1, 1, 0],
+            vec![0, 1, 1, 1, 1, 1, 1, 0],
+            vec![0, 1, 1, 1, 1, 1, 1, 0],
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+        ];
+
+        assert_eq!(count_overclaimed(&fabric), 4);
     }
 }
