@@ -57,17 +57,43 @@ fn count_overclaimed(fabric: &Vec<Vec<i32>>) -> i32 {
         .sum()
 }
 
+/// Verify if a claim is valid
+///
+/// A claim is valid if there are no other claims on the fabric overlapping this one
+fn is_valid(fabric: &Vec<Vec<i32>>, claim: &Claim) -> bool {
+    for x in claim.top..claim.top + claim.height {
+        for y in claim.left..claim.left + claim.width {
+            if fabric[x][y] != 1 {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 fn main() -> Result<()> {
     // Part 1
     let contents = read_input("src/day3/input1.txt")?;
 
     let mut fabric: Vec<Vec<i32>> = vec![vec![0; 1000]; 1000];
 
-    for claim in contents.lines().map(|line| Claim::from(line)) {
+    let claims: Vec<Claim> = contents.lines().map(|line| Claim::from(line)).collect();
+
+    for claim in claims.iter() {
         claim_fabric(&mut fabric, &claim);
     }
 
     println!("Day 3 - Part 1: {}", count_overclaimed(&fabric));
+
+    if let Some(claim) = claims
+        .iter()
+        .filter(|&claim| is_valid(&fabric, claim))
+        .next()
+    {
+        println!("Day 3 - Part 1: {}", claim.id);
+    } else {
+        println!("Day 3 - Part 1: Claim not found");
+    }
 
     Ok(())
 }
@@ -180,5 +206,41 @@ mod test {
         ];
 
         assert_eq!(count_overclaimed(&fabric), 4);
+    }
+
+    #[test]
+    fn is_valid_verifies_valid_claim() {
+        let fabric: Vec<Vec<i32>> = vec![
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+            vec![0, 0, 0, 1, 1, 1, 1, 0],
+            vec![0, 0, 0, 1, 1, 1, 1, 0],
+            vec![0, 1, 1, 2, 2, 1, 1, 0],
+            vec![0, 1, 1, 2, 2, 1, 1, 0],
+            vec![0, 1, 1, 1, 1, 1, 1, 0],
+            vec![0, 1, 1, 1, 1, 1, 1, 0],
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+        ];
+
+        let claim = Claim::from("#3 @ 5,5: 2x2");
+
+        assert_eq!(is_valid(&fabric, &claim), true);
+    }
+
+    #[test]
+    fn is_valid_doesnt_verify_invalid_claim() {
+        let fabric: Vec<Vec<i32>> = vec![
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+            vec![0, 0, 0, 1, 1, 1, 1, 0],
+            vec![0, 0, 0, 1, 1, 1, 1, 0],
+            vec![0, 1, 1, 2, 2, 1, 1, 0],
+            vec![0, 1, 1, 2, 2, 1, 1, 0],
+            vec![0, 1, 1, 1, 1, 1, 1, 0],
+            vec![0, 1, 1, 1, 1, 1, 1, 0],
+            vec![0, 0, 0, 0, 0, 0, 0, 0],
+        ];
+
+        let claim = Claim::from("#2 @ 3,1: 4x4");
+
+        assert_eq!(is_valid(&fabric, &claim), false);
     }
 }
